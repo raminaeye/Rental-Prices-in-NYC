@@ -1,11 +1,17 @@
+"""Data quality tests for the cleaned rental listings dataset.
+
+These tests are run by pytest through the ``data_check`` MLflow step (see the
+``MLproject`` file). The ``data``, ``ref_data``, ``kl_threshold``,
+``min_price`` and ``max_price`` fixtures are provided by ``conftest.py``.
+"""
 import pandas as pd
 import numpy as np
 import scipy.stats
 
 
 def test_column_names(data):
-
-    expected_colums = [
+    """Check that the dataset has exactly the expected columns, in order."""
+    expected_columns = [
         "id",
         "name",
         "host_id",
@@ -27,11 +33,11 @@ def test_column_names(data):
     these_columns = data.columns.values
 
     # This also enforces the same order
-    assert list(expected_colums) == list(these_columns)
+    assert list(expected_columns) == list(these_columns)
 
 
 def test_neighborhood_names(data):
-
+    """Check that the borough names are exactly the five NYC boroughs."""
     known_names = ["Bronx", "Brooklyn", "Manhattan", "Queens", "Staten Island"]
 
     neigh = set(data['neighbourhood_group'].unique())
@@ -41,18 +47,17 @@ def test_neighborhood_names(data):
 
 
 def test_proper_boundaries(data: pd.DataFrame):
-    """
-    Test proper longitude and latitude boundaries for properties in and around NYC
-    """
+    """Check that all listings fall within the NYC longitude/latitude bounds."""
     idx = data['longitude'].between(-74.25, -73.50) & data['latitude'].between(40.5, 41.2)
 
     assert np.sum(~idx) == 0
 
 
 def test_similar_neigh_distrib(data: pd.DataFrame, ref_data: pd.DataFrame, kl_threshold: float):
-    """
-    Apply a threshold on the KL divergence to detect if the distribution of the new data is
-    significantly different than that of the reference dataset
+    """Check that the borough distribution has not drifted vs. the reference data.
+
+    The KL divergence between the new data and the reference dataset must stay
+    below ``kl_threshold``.
     """
     dist1 = data['neighbourhood_group'].value_counts().sort_index()
     dist2 = ref_data['neighbourhood_group'].value_counts().sort_index()
@@ -60,17 +65,11 @@ def test_similar_neigh_distrib(data: pd.DataFrame, ref_data: pd.DataFrame, kl_th
     assert scipy.stats.entropy(dist1, dist2, base=2) < kl_threshold
 
 
-########################################################
-# Implement here test_row_count and test_price_range   #
-########################################################
 def test_row_count(data: pd.DataFrame):
-    """
-    Checking the number of samples in the dataset
-    """
+    """Check that the dataset size is reasonable (not too small, not too large)."""
     assert 15000 < data.shape[0] < 1000000
 
+
 def test_price_range(data: pd.DataFrame, min_price: float, max_price: float):
-    """
-    checking the price is within min and max
-    """
-    assert np.sum(data['price'].between(min_price,max_price))
+    """Check that every price falls within the accepted [min_price, max_price] range."""
+    assert np.sum(~data['price'].between(min_price, max_price)) == 0

@@ -1,6 +1,9 @@
 #!/usr/bin/env python
-"""
-This script download a URL to a local destination
+"""Upload a local sample CSV as a Weights & Biases artifact.
+
+Reads the requested sample from the ``data/`` directory next to this script
+and logs it to W&B under the given artifact name, so downstream steps can
+fetch it with ``run.use_artifact``.
 """
 import argparse
 import logging
@@ -15,7 +18,11 @@ logger = logging.getLogger()
 
 
 def go(args):
+    """Run the get_data step.
 
+    :param args: parsed command line arguments with ``sample``,
+        ``artifact_name``, ``artifact_type`` and ``artifact_description``
+    """
     run = wandb.init(job_type="download_file")
     run.config.update(args)
 
@@ -31,7 +38,7 @@ def go(args):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Download URL to a local destination")
+    parser = argparse.ArgumentParser(description="Upload a sample CSV as a W&B artifact")
 
     parser.add_argument("sample", type=str, help="Name of the sample to download")
 

@@ -1,3 +1,4 @@
+"""Path sanitization helpers."""
 import os
 
 

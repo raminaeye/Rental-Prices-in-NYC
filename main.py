@@ -1,3 +1,11 @@
+#!/usr/bin/env python
+"""Entrypoint for the NYC short-term rental price ML pipeline.
+
+Each step is executed through MLflow: shared reusable steps are pulled from
+the components repository, while steps developed for this project live under
+``src/``. All parameters are read from ``config.yaml`` via Hydra; nothing is
+hardcoded here.
+"""
 import json
 
 import mlflow
@@ -14,17 +22,18 @@ _steps = [
     "data_split",
     "train_random_forest",
     "test_regression_model",
-    # NOTE: We do not include this in the steps so it is not run by mistake.
-    # You first need to promote a model export to "prod" before you can run this,
-    # then you need to run this step explicitly
-#    "test_regression_model"
 ]
 
 
 # This automatically reads in the configuration
 @hydra.main(config_name='config')
 def go(config: DictConfig):
+    """Run the selected pipeline steps.
 
+    :param config: Hydra configuration loaded from ``config.yaml``. The
+        ``main.steps`` key selects which steps to run ("all" or a
+        comma-separated list of step names).
+    """
     # Setup the wandb experiment. All runs will be grouped under this name
     os.environ["WANDB_PROJECT"] = config["main"]["project_name"]
     os.environ["WANDB_RUN_GROUP"] = config["main"]["experiment_name"]
@@ -61,7 +70,7 @@ def go(config: DictConfig):
                      "min_price": config['etl']['min_price'],
                      "max_price": config['etl']['max_price']
                  },
-     )
+            )
 
         if "data_check" in active_steps:
             _ = mlflow.run(
@@ -74,7 +83,7 @@ def go(config: DictConfig):
                       "min_price": config['etl']['min_price'],
                       "max_price": config['etl']['max_price']
                  },
-     )
+            )
 
         if "data_split" in active_steps:
             _ = mlflow.run(
@@ -86,7 +95,7 @@ def go(config: DictConfig):
                       "random_seed": config['modeling']['random_seed'],
                       "stratify_by": config['modeling']['stratify_by']
                  },
-     )
+            )
 
         if "train_random_forest" in active_steps:
 
@@ -95,9 +104,8 @@ def go(config: DictConfig):
             with open(rf_config, "w+") as fp:
                 json.dump(dict(config["modeling"]["random_forest"].items()), fp)  # DO NOT TOUCH
 
-            # NOTE: use the rf_config we just created as the rf_config parameter for the train_random_forest
-            # step
-
+            # NOTE: use the rf_config we just created as the rf_config parameter
+            # for the train_random_forest step
             _ = mlflow.run(
                 os.path.join(hydra.utils.get_original_cwd(), "src", "train_random_forest"),
                 "main",
@@ -106,13 +114,15 @@ def go(config: DictConfig):
                     "random_seed": config["modeling"]["random_seed"],
                     "val_size": config["modeling"]["val_size"],
                     "stratify_by": config["modeling"]["stratify_by"],
-                    "rf_config" : rf_config,
-                    "max_tfidf_features" : config["modeling"]["max_tfidf_features"],
-                    "output_artifact" : "random_forest_export"
+                    "rf_config": rf_config,
+                    "max_tfidf_features": config["modeling"]["max_tfidf_features"],
+                    "output_artifact": "random_forest_export"
                 },
             )
 
-
+        # NOTE: this step requires a model export manually promoted to "prod"
+        # on Weights & Biases before it can run, so invoke it explicitly with
+        # -P steps=test_regression_model rather than running the whole pipeline.
         if "test_regression_model" in active_steps:
             _ = mlflow.run(
                 f"{config['main']['components_repository']}/test_regression_model",

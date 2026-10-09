@@ -1,6 +1,8 @@
 #!/usr/bin/env python
-"""
-This step takes the best model, tagged with the "prod" tag, and tests it against the test dataset
+"""Test the production model against the held-out test set.
+
+Fetches the MLflow model tagged ``prod`` and the test dataset from Weights &
+Biases, runs inference, and logs R2 and MAE to W&B.
 """
 import argparse
 import logging
@@ -9,15 +11,17 @@ import mlflow
 import pandas as pd
 from sklearn.metrics import mean_absolute_error
 
-from wandb_utils.log_artifact import log_artifact
-
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)-15s %(message)s")
 logger = logging.getLogger()
 
 
 def go(args):
+    """Run the test_regression_model step.
 
+    :param args: parsed command line arguments with ``mlflow_model`` and
+        ``test_dataset``
+    """
     run = wandb.init(job_type="test_model")
     run.config.update(args)
 
@@ -56,14 +60,14 @@ if __name__ == "__main__":
 
     parser.add_argument(
         "--mlflow_model",
-        type=str, 
+        type=str,
         help="Input MLFlow model",
         required=True
     )
 
     parser.add_argument(
         "--test_dataset",
-        type=str, 
+        type=str,
         help="Test dataset",
         required=True
     )

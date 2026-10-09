@@ -11,7 +11,16 @@ dependencies:
   - hydra-core=1.0.6
   - matplotlib=3.3.4
   - pandas=1.2.3
+  - scikit-learn=0.24.1
+  - scipy=1.5.2
+  - pytest=6.2.2
+  - seaborn=0.11.1
+  - pyarrow=2.0
+  - ipywidgets
+  - pillow=8.1.2
+  - pandas-profiling
   - git=2.30.2
   - pip=20.3.3
   - pip:
       - wandb==0.10.31
+      - jinja2

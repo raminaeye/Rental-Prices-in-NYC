@@ -1,6 +1,9 @@
 #!/usr/bin/env python
-"""
-This script splits the provided dataframe in test and remainder
+"""Split the dataset into train+validation and test artifacts.
+
+Fetches the input CSV artifact from Weights & Biases, performs a (optionally
+stratified) train/test split with scikit-learn, and logs both splits back to
+W&B as the ``trainval_data.csv`` and ``test_data.csv`` artifacts.
 """
 import argparse
 import logging
@@ -15,7 +18,11 @@ logger = logging.getLogger()
 
 
 def go(args):
+    """Run the train_val_test_split step.
 
+    :param args: parsed command line arguments with ``input``,
+        ``test_size``, ``random_seed`` and ``stratify_by``
+    """
     run = wandb.init(job_type="train_val_test_split")
     run.config.update(args)
 
@@ -35,11 +42,11 @@ def go(args):
     )
 
     # Save to output files
-    for df, k in zip([trainval, test], ['trainval', 'test']):
+    for split_df, k in zip([trainval, test], ['trainval', 'test']):
         logger.info(f"Uploading {k}_data.csv dataset")
         with tempfile.NamedTemporaryFile("w") as fp:
 
-            df.to_csv(fp.name, index=False)
+            split_df.to_csv(fp.name, index=False)
 
             log_artifact(
                 f"{k}_data.csv",

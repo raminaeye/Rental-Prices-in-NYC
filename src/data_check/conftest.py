@@ -1,3 +1,9 @@
+"""Pytest fixtures for the data_check step.
+
+The datasets are fetched from Weights & Biases so the tests run against the
+exact artifact versions produced by the pipeline, and thresholds are passed
+on the pytest command line (see the ``MLproject`` file).
+"""
 import pytest
 import pandas as pd
 import wandb
@@ -13,6 +19,7 @@ def pytest_addoption(parser):
 
 @pytest.fixture(scope='session')
 def data(request):
+    """Load the dataset under test from W&B as a pandas DataFrame."""
     run = wandb.init(job_type="data_tests", resume=True)
 
     # Download input artifact. This will also note that this script is using this
@@ -29,6 +36,7 @@ def data(request):
 
 @pytest.fixture(scope='session')
 def ref_data(request):
+    """Load the reference dataset from W&B as a pandas DataFrame."""
     run = wandb.init(job_type="data_tests", resume=True)
 
     # Download input artifact. This will also note that this script is using this
@@ -45,6 +53,7 @@ def ref_data(request):
 
 @pytest.fixture(scope='session')
 def kl_threshold(request):
+    """Threshold for the KL divergence test, as a float."""
     kl_threshold = request.config.option.kl_threshold
 
     if kl_threshold is None:
@@ -52,8 +61,10 @@ def kl_threshold(request):
 
     return float(kl_threshold)
 
+
 @pytest.fixture(scope='session')
 def min_price(request):
+    """Minimum accepted price, as a float."""
     min_price = request.config.option.min_price
 
     if min_price is None:
@@ -61,8 +72,10 @@ def min_price(request):
 
     return float(min_price)
 
+
 @pytest.fixture(scope='session')
 def max_price(request):
+    """Maximum accepted price, as a float."""
     max_price = request.config.option.max_price
 
     if max_price is None:
